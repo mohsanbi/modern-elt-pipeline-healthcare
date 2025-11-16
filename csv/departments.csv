@@ -1,0 +1,11 @@
+DeptID,DeptName
+DEPT01,Cardiology
+DEPT02,Neurology
+DEPT03,Oncology
+DEPT04,Orthopedics
+DEPT05,Pediatrics
+DEPT06,Emergency Medicine
+DEPT07,General Surgery
+DEPT08,Radiology
+DEPT09,Intensive Care Unit (ICU)
+DEPT10,Maternity

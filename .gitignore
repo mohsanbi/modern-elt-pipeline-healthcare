@@ -1,0 +1,35 @@
+# --- Credentials ---
+#  service account key!
+gcp_credentials.json
+
+# --- Python ---
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Caches and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- dbt ---
+# Packages, logs, and compiled models
+dbt_packages/
+target/
+logs/
+
+# --- Docker ---
+# Locally built images and data volumes (if any)
+postgres_data/
+airflow_db_data/
+
+# --- VS Code ---
+# Editor-specific settings
+.vscode/
+
+# --- Operating System ---
+.DS_Store
+Thumbs.db

@@ -1,0 +1,33 @@
+name: 'healthcare_project'
+version: '1.0.0'
+config-version: 2
+
+profile: 'healthcare_project'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "dbt_modules"
+
+models:
+  healthcare_project:
+    # Default materialization for all models, can be overridden
+    +materialized: view
+    # Default schema for models (will create 'healthcare_data_staging' dataset)
+    +schema: healthcare_data_staging
+    
+    # Override schema for models in the 'intermediate' directory
+    intermediate:
+      +schema: healthcare_data_intermediate
+
+    # Override schema for models in the 'marts' directory
+    marts:
+      +schema: healthcare_data_marts

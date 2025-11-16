@@ -1,0 +1,13 @@
+healthcare_project:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: 'healthcare-data-project-477711' # <--- REPLACE WITH YOUR GCP PROJECT ID
+      dataset: healthcare_data
+      threads: 4
+      keyfile: /usr/app/gcp_credentials.json # Path to the mounted service account key inside the container
+      timeout_seconds: 300
+      priority: interactive
+      retries: 1

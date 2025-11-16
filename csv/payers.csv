@@ -1,0 +1,8 @@
+PayerID,PayerName,PayerType
+PAYER01,Medicare,Government
+PAYER02,Medicaid,Government
+PAYER03,Aetna,Commercial
+PAYER04,Cigna,Commercial
+PAYER05,UnitedHealthcare,Commercial
+PAYER06,Blue Cross Blue Shield,Commercial
+PAYER07,Self-Pay,Self-Pay

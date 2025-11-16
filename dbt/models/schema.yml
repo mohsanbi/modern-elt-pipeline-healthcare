@@ -1,0 +1,83 @@
+version: 2
+
+sources:
+  - name: healthcare_data_raw
+    database: 'healthcare-data-project-477711' # <--- REPLACE WITH YOUR GCP PROJECT ID
+    schema: healthcare_data # This is the dataset name
+
+    tables:
+      - name: claims
+      - name: payers
+      - name: diagnoses
+      - name: inventory
+      - name: patients
+      - name: departments
+      - name: procedures
+      - name: providers
+      - name: encounters
+
+models: # <--- ADD THIS BLOCK FOR MODELS AND TESTS
+  - name: stg_patients
+    description: Staging model for patient data
+    columns:
+      - name: patient_id
+        description: Unique identifier for the patient.
+        tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: First name of the patient.
+        tests:
+          - not_null
+      - name: last_name
+        description: Last name of the patient.
+        tests:
+          - not_null
+      - name: gender
+        description: Gender of the patient.
+        tests:
+          - accepted_values:
+              values: ['Male', 'Female', 'Other', 'Unknown'] # Example values
+              config:
+                severity: warn # Treat this as a warning, not a failure
+      - name: date_of_birth
+        description: Patient's date of birth as a string.
+      - name: registration_date
+        description: Date patient registered.
+        tests:
+          - not_null
+
+  #Test the fact claims table
+  - name: fact_claims
+    description: Fact table containing claims data, joined with dimensions.
+    columns:
+      - name: claim_id
+        description: Unique identifier for the claim.
+        tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: Foreign key to the patient dimension.
+        tests:
+          - not_null
+          - relationships: # Ensures patient_id exists in dim_patients
+              to: ref('dim_patients')
+              field: patient_id
+      - name: service_amount
+        description: The billed service amount.
+        tests:
+          - dbt_utils.at_least_one
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 1000000 # Assuming claims are rarely over $1M
+              config:
+                severity: warn
+      - name: amount_paid
+        description: The amount actually paid for the service.
+        tests:
+          - dbt_utils.at_least_one
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 1000000
+              config:
+                severity: warn
