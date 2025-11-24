@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: healthcare_data_raw
-    database: 'healthcare-data-project-477711' # <--- REPLACE WITH YOUR GCP PROJECT ID
+    database: 'healthcare-data-project-477711' # My GCP PROJECT ID
     schema: healthcare_data # This is the dataset name
 
     tables:
@@ -16,7 +16,7 @@ sources:
       - name: providers
       - name: encounters
 
-models: # <--- ADD THIS BLOCK FOR MODELS AND TESTS
+models: # THIS BLOCK IS FOR MODELS AND TESTS
   - name: stg_patients
     description: Staging model for patient data
     columns:
@@ -37,7 +37,7 @@ models: # <--- ADD THIS BLOCK FOR MODELS AND TESTS
         description: Gender of the patient.
         tests:
           - accepted_values:
-              values: ['Male', 'Female', 'Other', 'Unknown'] # Example values
+              values: ['Male', 'Female', 'Other', 'Unknown'] 
               config:
                 severity: warn # Treat this as a warning, not a failure
       - name: date_of_birth

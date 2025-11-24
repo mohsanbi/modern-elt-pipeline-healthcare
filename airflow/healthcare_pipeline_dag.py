@@ -7,7 +7,7 @@ import os
 # Define environment variables for GCP credentials and project ID
 # These are mounted into the Airflow container
 GCP_CREDENTIALS_PATH = '/opt/airflow/gcp_credentials.json'
-# Make sure to replace with your actual GCP Project ID
+
 GCP_PROJECT_ID = 'healthcare-data-project-477711' 
 BIGQUERY_DATASET = 'healthcare_data'
 
@@ -46,8 +46,8 @@ with DAG(
             'BIGQUERY_DATASET': BIGQUERY_DATASET
         }
     )
-
-    run_dbt_tests = BashOperator( # <--- NEW TASK
+  
+    run_dbt_tests = BashOperator( 
         task_id='run_dbt_tests',
         bash_command=f"""
             cd /opt/airflow/dbt_project &&
@@ -60,7 +60,7 @@ with DAG(
         }
     )
 
-    # 2. Task to run dbt transformations
+    # 2. #This will run dbt transformation once the etl script executed successfully
     # The dbt project is located in /opt/airflow/dbt_project inside the container
     run_dbt_transformations = BashOperator(
         task_id='run_dbt_models',
@@ -70,7 +70,7 @@ with DAG(
             dbt debug --profile healthcare_project --target dev && # Optional: for debugging connection
             dbt run --profile healthcare_project --target dev
         """,
-        env={ # Pass environment variables directly to the bash command as well
+        env={ 
             'GOOGLE_APPLICATION_CREDENTIALS': GCP_CREDENTIALS_PATH
         }
     )

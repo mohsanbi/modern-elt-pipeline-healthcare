@@ -1,3 +1,4 @@
+![ER Diagram](docs/ERD.png)
 # Modern ELT Pipeline for Healthcare Data
 
 This project shows a complete, end-to-end, and containerized ELT (Extract, Load, Transform) pipeline built with modern data engineering tools. It processes raw healthcare CSV data, loads it into PostgreSQL database(as a source) and then from PostgreSQL to a cloud data warehouse(BigQuery), transforms it into an analytics-ready format using dbt(Data Build Tool), and orchestrates the entire workflow using Apache Airflow.
@@ -53,15 +54,15 @@ CSV → Python Script → PostgreSQL → BigQuery (Raw → Staging → Marts) �
 healthcare_project/
 - airflow/              # Airflow DAGs
 - csv/                  # Source CSV data 
-    claims.csv
-    payers.csv
-    diagnoses.csv
-    inventory.csv
-    patients.csv
-    departments.csv
-    procedures.csv
-    providers.csv
-    encounters.csv
+    (claims.csv , 
+    payers.csv , 
+    diagnoses.csv , 
+    inventory.csv , 
+    patients.csv , 
+    departments.csv , 
+    procedures.csv , 
+    providers.csv , 
+    encounters.csv)
 - dbt/                  # dbt project for transformations and tests
 - script/               # Python ETL script
 - docker-compose.yml    # Defines all services

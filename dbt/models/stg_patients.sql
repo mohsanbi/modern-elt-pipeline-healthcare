@@ -3,7 +3,7 @@ SELECT
     CAST(PatientID AS STRING) AS patient_id,
     CAST(FirstName AS STRING) AS first_name,
     CAST(LastName AS STRING) AS last_name,
-    CAST(DateOfBirth AS STRING) AS date_of_birth, -- Keep as string for now if diverse formats, or use PARSE_DATE if consistent
+    CAST(DateOfBirth AS STRING) AS date_of_birth, 
     CAST(Gender AS STRING) AS gender,
     CAST(Address AS STRING) AS address,
     CAST(ContactNumber AS STRING) AS contact_number,

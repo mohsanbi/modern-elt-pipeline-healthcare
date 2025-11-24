@@ -2,18 +2,18 @@ import pandas as pd
 from sqlalchemy import create_engine
 from google.cloud import bigquery
 import os
-import time # <--- ADD THIS LINE
+import time 
 
 # --- PostgreSQL Configuration ---
 # Add retry logic for PostgreSQL connection
 MAX_RETRIES = 10
-RETRY_DELAY_SECONDS = 5 # Wait 5 seconds between retries
+RETRY_DELAY_SECONDS = 5 # Wait 5 seconds before retring
 
 postgres_engine = None
 for i in range(MAX_RETRIES):
     try:
         print(f"Attempting to connect to PostgreSQL (Attempt {i+1}/{MAX_RETRIES})...")
-        # The 'postgres' hostname is resolved by Docker Compose to the postgres service
+        
         temp_engine = create_engine('postgresql://admin:admin@postgres:5432/hospital_db')
         # Test connection immediately
         temp_engine.connect().close()
@@ -34,7 +34,7 @@ if postgres_engine is None:
 
 
 csv_files = {
-    'claims.csv': 'claims', # Assuming you added these from your log output
+    'claims.csv': 'claims', 
     'payers.csv': 'payers',
     'diagnoses.csv': 'diagnoses',
     'inventory.csv': 'inventory',
@@ -46,12 +46,11 @@ csv_files = {
 }
 
 # --- BigQuery Configuration ---
-# Set Google Application Credentials environment variable
-# This path is relative to the WORKDIR in our Dockerfile
+
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/gcp_credentials.json'
 bigquery_client = bigquery.Client()
-GCP_PROJECT_ID = 'healthcare-data-project-477711' # <-- IMPORTANT: REPLACE WITH YOUR ACTUAL PROJECT ID
-BIGQUERY_DATASET = 'healthcare_data' # We'll create this dataset
+GCP_PROJECT_ID = 'healthcare-data-project-477711' # My PROJECT ID in GCP
+BIGQUERY_DATASET = 'healthcare_data' # we Will create this dataset
 
 def load_csv_to_postgres():
     print("Starting CSV to PostgreSQL Load...")
@@ -71,7 +70,7 @@ def load_postgres_to_bigquery():
         print(f"Dataset {BIGQUERY_DATASET} already exists.")
     except Exception:
         dataset = bigquery.Dataset(dataset_id)
-        dataset.location = "US" # You can choose your desired region
+        dataset.location = "US" # can region if needed
         bigquery_client.create_dataset(dataset, timeout=30)
         print(f"Dataset {BIGQUERY_DATASET} created.")
 
