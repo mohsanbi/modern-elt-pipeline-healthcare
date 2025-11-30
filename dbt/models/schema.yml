@@ -81,3 +81,85 @@ models: # THIS BLOCK IS FOR MODELS AND TESTS
               max_value: 1000000
               config:
                 severity: warn
+  - name: dim_providers
+    description: "Dimension table for healthcare providers."
+    columns:
+      - name: provider_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_departments
+    description: "Dimension table for hospital departments."
+    columns:
+      - name: department_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_payers
+    description: "Dimension table for insurance payers."
+    columns:
+      - name: payer_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_procedures
+    description: "Dimension table for unique medical procedures."
+    columns:
+      - name: procedure_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_diagnoses
+    description: "Dimension table for unique medical diagnoses."
+    columns:
+      - name: diagnosis_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_date
+    description: "Date dimension for time-based analysis."
+    columns:
+      - name: date_day
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_encounters
+    description: "Fact table for patient encounters, one row per encounter."
+    columns:
+      - name: encounter_id
+        tests:
+          - unique
+          - not_null
+      - name: patient_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_patients')
+              field: patient_id
+      - name: department_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_departments')
+              field: department_id
+      - name: provider_id
+        tests:
+          - relationships:
+              to: ref('dim_providers')
+              field: provider_id
+      - name: payer_id
+        tests:
+          - relationships:
+              to: ref('dim_payers')
+              field: payer_id
+      - name: encounter_date_id
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_day

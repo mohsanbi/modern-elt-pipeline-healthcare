@@ -7,6 +7,19 @@ This project shows a complete, end-to-end, and containerized ELT (Extract, Load,
 
 CSV → Python Script → PostgreSQL → BigQuery (Raw → Staging → Marts) → dbt → Airflow
 
+## Project Highlights
+
+- staging, intermediate, and mart layers following dbt best practices.
+
+- Built-in and custom dbt tests (unique, not_null, relationships) to ensure strong data quality.
+
+- Data cleaning and schema standardization directly within dbt models.
+
+- Created reusable macros and leveraged ref() for clear model dependencies and lineage.
+
+- Optimized performance using appropriate materializations (table, view, incremental).
+
+- Enabled analytics-ready data marts consumed downstream by BI and reporting tools.
 
 ## Tech Stack
 

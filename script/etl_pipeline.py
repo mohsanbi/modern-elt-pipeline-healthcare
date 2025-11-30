@@ -2,20 +2,48 @@ import pandas as pd
 from sqlalchemy import create_engine
 from google.cloud import bigquery
 import os
-import time 
+import time
 
-# --- PostgreSQL Configuration ---
-# Add retry logic for PostgreSQL connection
+# ----------------------------
+# Configuration via Environment Variables
+# ----------------------------
+
+# PostgreSQL
+POSTGRES_URI = os.environ.get("POSTGRES_URI", "postgresql://admin:admin@postgres:5432/hospital_db")
+
+# CSV folder
+CSV_FOLDER = os.environ.get("CSV_FOLDER", "/csv")
+
+# GCP / BigQuery
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "/app/gcp_credentials.json")
+GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "healthcare-data-project-477711")
+BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", "healthcare_data")
+
+# Retry settings for Postgres
 MAX_RETRIES = 10
-RETRY_DELAY_SECONDS = 5 # Wait 5 seconds before retring
+RETRY_DELAY_SECONDS = 5
 
+# CSV to table mapping
+csv_files = {
+    'claims.csv': 'claims',
+    'payers.csv': 'payers',
+    'diagnoses.csv': 'diagnoses',
+    'inventory.csv': 'inventory',
+    'patients.csv': 'patients',
+    'departments.csv': 'departments',
+    'procedures.csv': 'procedures',
+    'providers.csv': 'providers',
+    'encounters.csv': 'encounters'
+}
+
+# ----------------------------
+# Connect to PostgreSQL with retry
+# ----------------------------
 postgres_engine = None
 for i in range(MAX_RETRIES):
     try:
         print(f"Attempting to connect to PostgreSQL (Attempt {i+1}/{MAX_RETRIES})...")
-        
-        temp_engine = create_engine('postgresql://admin:admin@postgres:5432/hospital_db')
-        # Test connection immediately
+        temp_engine = create_engine(POSTGRES_URI)
         temp_engine.connect().close()
         postgres_engine = temp_engine
         print("✅ Successfully connected to PostgreSQL!")
@@ -27,50 +55,42 @@ for i in range(MAX_RETRIES):
             time.sleep(RETRY_DELAY_SECONDS)
         else:
             print("❌ Max retries reached. Could not connect to PostgreSQL.")
-            raise # Re-raise the exception if max retries are exhausted
+            raise
 
 if postgres_engine is None:
     raise Exception("Failed to establish PostgreSQL connection after multiple retries.")
 
-
-csv_files = {
-    'claims.csv': 'claims', 
-    'payers.csv': 'payers',
-    'diagnoses.csv': 'diagnoses',
-    'inventory.csv': 'inventory',
-    'patients.csv': 'patients',
-    'departments.csv': 'departments',
-    'procedures.csv': 'procedures',
-    'providers.csv': 'providers',
-    'encounters.csv': 'encounters'
-}
-
-# --- BigQuery Configuration ---
-
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/gcp_credentials.json'
+# ----------------------------
+# Connect to BigQuery
+# ----------------------------
 bigquery_client = bigquery.Client()
-GCP_PROJECT_ID = 'healthcare-data-project-477711' # My PROJECT ID in GCP
-BIGQUERY_DATASET = 'healthcare_data' # we Will create this dataset
 
+# ----------------------------
+# Functions
+# ----------------------------
 def load_csv_to_postgres():
     print("Starting CSV to PostgreSQL Load...")
     for file, table in csv_files.items():
-        df = pd.read_csv(f'/csv/{file}')
+        csv_path = os.path.join(CSV_FOLDER, file)
+        if not os.path.exists(csv_path):
+            raise FileNotFoundError(f"CSV file not found: {csv_path}")
+        df = pd.read_csv(csv_path)
         df.to_sql(table, postgres_engine, if_exists='replace', index=False)
         print(f"✅ {file} → PostgreSQL table: {table}")
-    print("🎉 All CSVs Uploaded to PostgreSQL Successfully!")
+    print("🎉 All CSVs uploaded to PostgreSQL successfully!")
 
 def load_postgres_to_bigquery():
     print("\nStarting PostgreSQL to BigQuery Load...")
 
-    # Create BigQuery Dataset if it doesn't exist
     dataset_id = f"{GCP_PROJECT_ID}.{BIGQUERY_DATASET}"
+
+    # Create dataset if it doesn't exist
     try:
         bigquery_client.get_dataset(dataset_id)
         print(f"Dataset {BIGQUERY_DATASET} already exists.")
     except Exception:
         dataset = bigquery.Dataset(dataset_id)
-        dataset.location = "US" # can region if needed
+        dataset.location = "US"
         bigquery_client.create_dataset(dataset, timeout=30)
         print(f"Dataset {BIGQUERY_DATASET} created.")
 
@@ -79,15 +99,18 @@ def load_postgres_to_bigquery():
         df = pd.read_sql_table(table_name, postgres_engine)
 
         print(f"Loading data to BigQuery table: {BIGQUERY_DATASET}.{table_name}...")
-        job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE") # Overwrite table if it exists
+        job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
         job = bigquery_client.load_table_from_dataframe(
             df, f"{dataset_id}.{table_name}", job_config=job_config
         )
-        job.result() # Wait for the job to complete
-        print(f"✅ Data from PostgreSQL table '{table_name}' loaded to BigQuery table: '{BIGQUERY_DATASET}.{table_name}'")
+        job.result()
+        print(f"✅ Data from PostgreSQL table '{table_name}' loaded to BigQuery table '{BIGQUERY_DATASET}.{table_name}'")
 
-    print("🎉 All PostgreSQL tables uploaded to BigQuery Successfully!")
+    print("🎉 All PostgreSQL tables uploaded to BigQuery successfully!")
 
+# ----------------------------
+# Main
+# ----------------------------
 if __name__ == "__main__":
     load_csv_to_postgres()
     load_postgres_to_bigquery()

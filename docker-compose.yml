@@ -1,5 +1,8 @@
-
 services:
+
+  # -------------------------------
+  # 1. PostgreSQL for ETL
+  # -------------------------------
   postgres:
     image: postgres:14
     container_name: hospital_postgres
@@ -11,7 +14,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./csv:/csv
+      - ./csv:/csv:ro
+
+
+  # -------------------------------
+  # 2. pgAdmin
+  # -------------------------------
   pgadmin:
     image: dpage/pgadmin4
     container_name: hospital_pgadmin
@@ -22,25 +30,23 @@ services:
       - "8080:80"
 
 
-
+  # -------------------------------
+  # 3. ETL Container
+  # -------------------------------
   etl:
     build: ./script
     container_name: hospital_etl
     depends_on:
       - postgres
     volumes:
-      - ./csv:/csv
-      - ./script:/app
-      - ./script/gcp_credentials.json:/app/gcp_credentials.json 
+      - ./csv:/csv:ro
+      - ./script:/app:rw
+      - ./script/gcp_credentials.json:/app/gcp_credentials.json:ro
 
-  dbt:
-    build: ./dbt
-    container_name: hospital_dbt
-    volumes:
-      - ./dbt:/usr/app
-    entrypoint: ["/bin/bash"]      
-    command: ["-c", "tail -f /dev/null"]
-     # Airflow Services
+
+  # -------------------------------
+  # 4. Airflow Postgres (metadata DB)
+  # -------------------------------
   airflow_postgres:
     image: postgres:14
     container_name: airflow_postgres
@@ -54,56 +60,80 @@ services:
       - airflow_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U airflow"]
-      interval: 10s
+      interval: 30s
       retries: 10
-      start_period: 30s
+      start_period: 40s
 
 
+  # -------------------------------
+  # 5. Standalone dbt Container
+  # -------------------------------
+  hospital_dbt:
+    build: ./dbt
+    container_name: hospital_dbt
+    command: ["bash", "-c", "while true; do sleep 1000; done"]
+    working_dir: /usr/app
+    tty: true
+    volumes:
+      - ./dbt:/usr/app:rw
+      - ./script/gcp_credentials.json:/usr/app/gcp_credentials.json:ro
+
+
+  # -------------------------------
+  # 6. Airflow Init container
+  # -------------------------------
   airflow_init:
-    image: apache/airflow:2.7.3-python3.11
+    build: ./airflow
     container_name: airflow_init
     entrypoint: /bin/bash
     command: -c "
-      echo 'Airflow initialization...';
+      echo 'Initializing Airflow...';
       mkdir -p /opt/airflow/dags /opt/airflow/plugins /opt/airflow/logs;
-      airflow db migrate;
-
-      airflow users create \
-        -u admin -p admin -f admin -l user -r Admin -e admin@example.com || true; "
+      airflow db upgrade;
+      airflow users create -u admin -p admin -f admin -l user -r Admin -e admin@example.com || true "
     environment:
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflow
-      
+      AIRFLOW__CORE__FERNET_KEY: 33pTSTlLx9DyHaV8Q-_W_TO4gPSvwvsm5QXaYluUi1I=
+      AIRFLOW__WEBSERVER__SECRET_KEY: f51c3f88d8a14283fdc6521f8c2e2d90b271ff4ec5bd8b3cf4aa6e1ce65adfd1
       AIRFLOW_UID: 50000
       AIRFLOW_GID: 0
     volumes:
-      - ./airflow:/opt/airflow/dags
+      - ./airflow/dags:/opt/airflow/dags
       - ./script:/opt/airflow/scripts
-      - ./dbt:/opt/airflow/dbt_project
-      - ./script/gcp_credentials.json:/opt/airflow/gcp_credentials.json
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt/profiles.yml:/home/airflow/.dbt/profiles.yml:ro
+      - ./script/gcp_credentials.json:/opt/airflow/gcp_credentials.json:ro
+      - ./csv:/csv:ro
     depends_on:
       airflow_postgres:
         condition: service_healthy
 
 
+  # -------------------------------
+  # 7. Airflow Webserver
+  # -------------------------------
   airflow_webserver:
-    image: apache/airflow:2.7.3-python3.11
+    build: ./airflow
     container_name: airflow_webserver
     entrypoint: ["bash", "-c", "airflow webserver"]
     environment:
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__CORE__FERNET_KEY: 33pTSTlLx9DyHaV8Q-_W_TO4gPSvwvsm5QXaYluUi1I=
+      AIRFLOW__WEBSERVER__SECRET_KEY: f51c3f88d8a14283fdc6521f8c2e2d90b271ff4ec5bd8b3cf4aa6e1ce65adfd1
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflow
-      
       AIRFLOW_UID: 50000
       AIRFLOW_GID: 0
-    
     ports:
       - "8081:8080"
     volumes:
-      - ./airflow:/opt/airflow/dags
+      - ./airflow/dags:/opt/airflow/dags
       - ./script:/opt/airflow/scripts
-      - ./dbt:/opt/airflow/dbt_project
-      - ./script/gcp_credentials.json:/opt/airflow/gcp_credentials.json
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt/profiles.yml:/home/airflow/.dbt/profiles.yml:ro
+      - ./script/gcp_credentials.json:/opt/airflow/gcp_credentials.json:ro
+      - ./csv:/csv:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     depends_on:
       airflow_postgres:
@@ -111,22 +141,29 @@ services:
       airflow_init:
         condition: service_completed_successfully
 
+
+  # -------------------------------
+  # 8. Airflow Scheduler
+  # -------------------------------
   airflow_scheduler:
-    image: apache/airflow:2.7.3-python3.11
+    build: ./airflow
     container_name: airflow_scheduler
     entrypoint: ["bash", "-c", "airflow scheduler"]
     environment:
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflow
-      
+      AIRFLOW__CORE__FERNET_KEY: 33pTSTlLx9DyHaV8Q-_W_TO4gPSvwvsm5QXaYluUi1I=
+      AIRFLOW__WEBSERVER__SECRET_KEY: f51c3f88d8a14283fdc6521f8c2e2d90b271ff4ec5bd8b3cf4aa6e1ce65adfd1
       AIRFLOW_UID: 50000
       AIRFLOW_GID: 0
-    
     volumes:
-      - ./airflow:/opt/airflow/dags
+      - ./airflow/dags:/opt/airflow/dags
       - ./script:/opt/airflow/scripts
-      - ./dbt:/opt/airflow/dbt_project
-      - ./script/gcp_credentials.json:/opt/airflow/gcp_credentials.json
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt/profiles.yml:/home/airflow/.dbt/profiles.yml:ro
+      - ./script/gcp_credentials.json:/opt/airflow/gcp_credentials.json:ro
+      - ./csv:/csv:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     depends_on:
       airflow_postgres:
@@ -134,6 +171,10 @@ services:
       airflow_init:
         condition: service_completed_successfully
 
+
+# -------------------------------
+# 9. VOLUMES
+# -------------------------------
 volumes:
   postgres_data:
   airflow_db_data:

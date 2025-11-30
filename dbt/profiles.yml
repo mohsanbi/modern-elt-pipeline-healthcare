@@ -7,7 +7,7 @@ healthcare_project:
       project: 'healthcare-data-project-477711' # My GCP PROJECT ID
       dataset: healthcare_data
       threads: 4
-      keyfile: /usr/app/gcp_credentials.json # Path to the mounted service account key inside the container
+      keyfile: /usr/app/gcp_credentials.json
       timeout_seconds: 300
       priority: interactive
       retries: 1

@@ -1,20 +1,23 @@
--- models/marts/fact_claims.sql
 SELECT
-    c.claim_id,
-    c.claim_date,
-    c.service_amount,
-    c.amount_paid,
-    c.patient_id,
-    c.procedure_id,
-    p.payer_name,
-    d.diagnosis_description
+    -- Keys
+    ice.claim_id,
+    ice.encounter_id,
+    ice.patient_id,
+    ice.payer_id,
+
+    -- Dates
+    ice.claim_date,
+
+    -- Degenerate Dimensions
+    ice.procedure_description,
+
+    -- Measures
+    ice.service_amount,
+    ice.amount_paid
+
 FROM
-    {{ ref('stg_claims') }} AS c
-LEFT JOIN
-    {{ ref('stg_payers') }} AS p
-    ON c.patient_id = p.payer_id 
-LEFT JOIN
-    {{ ref('stg_diagnoses') }} AS d
-    ON c.patient_id = d.encounter_id 
-WHERE
-    c.amount_paid > 0
+    {{ ref('int_claims_enriched') }} AS ice
+
+INNER JOIN
+    {{ ref('dim_patients') }} AS pat
+    ON ice.patient_id = pat.patient_id
