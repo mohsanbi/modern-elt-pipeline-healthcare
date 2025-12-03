@@ -4,6 +4,7 @@ SELECT
     ice.encounter_id,
     ice.patient_id,
     ice.payer_id,
+    ice.procedure_id,
 
     -- Dates
     ice.claim_date,
