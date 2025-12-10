@@ -63,6 +63,12 @@ models: # THIS BLOCK IS FOR MODELS AND TESTS
           - relationships: # Ensures patient_id exists in dim_patients
               to: ref('dim_patients')
               field: patient_id
+      - name: procedure_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_procedures')
+              field: procedure_id
       - name: service_amount
         description: The billed service amount.
         tests:
@@ -113,6 +119,18 @@ models: # THIS BLOCK IS FOR MODELS AND TESTS
           - unique
           - not_null
 
+      - name: cpt_code
+        tests:
+          - unique
+          - not_null
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - procedure_id
+            - cpt_code
+
+
   - name: dim_diagnoses
     description: "Dimension table for unique medical diagnoses."
     columns:
@@ -120,6 +138,17 @@ models: # THIS BLOCK IS FOR MODELS AND TESTS
         tests:
           - unique
           - not_null
+
+      - name: icd10_code
+        tests:
+          - unique
+          - not_null
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - diagnosis_id
+            - icd10_code
 
   - name: dim_date
     description: "Date dimension for time-based analysis."

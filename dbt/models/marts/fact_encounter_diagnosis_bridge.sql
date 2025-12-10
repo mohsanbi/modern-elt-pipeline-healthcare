@@ -1,8 +1,15 @@
+-- models/fact_encounter_diagnosis_bridge.sql
+
+WITH dedup AS (
+    SELECT DISTINCT
+        encounter_id,
+        icd10_code
+    FROM {{ ref('stg_diagnoses') }}
+)
+
 SELECT
-    e.encounter_id,
-    d.diagnosis_id
-FROM {{ ref('stg_diagnoses') }} d
+    d.encounter_id,
+    diag.diagnosis_id
+FROM dedup d
 JOIN {{ ref('dim_diagnoses') }} diag
     ON d.icd10_code = diag.icd10_code
-JOIN {{ ref('stg_encounters') }} e
-    ON d.encounter_id = e.encounter_id

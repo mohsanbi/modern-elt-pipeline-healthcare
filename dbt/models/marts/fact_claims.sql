@@ -4,7 +4,7 @@ SELECT
     ice.encounter_id,
     ice.patient_id,
     ice.payer_id,
-    ice.procedure_id,
+    {{ dbt_utils.generate_surrogate_key(['ice.cpt_code']) }} AS procedure_id,
 
     -- Dates
     ice.claim_date,

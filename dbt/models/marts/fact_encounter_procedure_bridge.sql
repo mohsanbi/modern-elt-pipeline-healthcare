@@ -1,8 +1,15 @@
+-- models/fact_encounter_procedure_bridge.sql
+
+WITH dedup AS (
+    SELECT DISTINCT
+        encounter_id,
+        cpt_code
+    FROM {{ ref('stg_procedures') }}
+)
+
 SELECT
-    e.encounter_id,
+    d.encounter_id,
     p.procedure_id
-FROM {{ ref('stg_procedures') }} s
+FROM dedup d
 JOIN {{ ref('dim_procedures') }} p
-    ON s.cpt_code = p.cpt_code
-JOIN {{ ref('stg_encounters') }} e
-    ON s.encounter_id = e.encounter_id
+    ON d.cpt_code = p.cpt_code

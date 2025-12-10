@@ -4,6 +4,7 @@ SELECT
     cl.claim_date,
     cl.patient_id,
     cl.service_amount,
+    proc.cpt_code as cpt_code,
     proc.procedure_id,
     cl.amount_paid,
 
