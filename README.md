@@ -1,4 +1,12 @@
-![ER Diagram](docs/ERD.png)
+# Data Modelling inside Power BI
+![ER Diagram](docs/Data_model.png)
+# Bigquery Cloud Data Warehouse
+![Bigquery](docs/BigQuery.png)
+# Apache Airflow for Task Scheduling
+![Airflow](docs/Airflow.png)
+# Docker for containerizing everything
+![Docker](docs/Docker.png)
+
 # Modern ELT Pipeline for Healthcare Data
 
 This project shows a complete, end-to-end, and containerized ELT (Extract, Load, Transform) pipeline built with modern data engineering tools. It processes raw healthcare CSV data, loads it into PostgreSQL database(as a source) and then from PostgreSQL to a cloud data warehouse(BigQuery), transforms it into an analytics-ready format using dbt(Data Build Tool), and orchestrates the entire workflow using Apache Airflow.
